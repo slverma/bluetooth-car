@@ -12,6 +12,7 @@ import BTDevices from './BTDevices';
 import BluetoothIcon from './icons/BluetoothIcon';
 import RefreshIcon from './icons/RefreshIcon';
 import { useBluetooth } from './contexts/BluetoothContext';
+import DPad from './components/DPad';
 
 export default function BTPanel() {
   const safeAreaInsets = useSafeAreaInsets();
@@ -78,7 +79,7 @@ export default function BTPanel() {
             Bluetooth Car Controller
           </Text>
           {connectedDevice && (
-            <Text style={[styles.connectedDeviceText, { color: '#34C759' }]}>
+            <Text style={[styles.connectedDeviceText]}>
               Connected to: {connectedDevice.name}
             </Text>
           )}
@@ -106,56 +107,14 @@ export default function BTPanel() {
       <BTDevices showModal={showModal} setShowModal={setShowModal} />
 
       <View style={styles.controlsContainer}>
-        {/* Forward Button */}
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.button}
-            onPressIn={handleForwardPress}
-            onPressOut={handleStop}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonText}>▲</Text>
-            <Text style={styles.buttonLabel}>Forward</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Left and Right Buttons */}
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.button}
-            onPressIn={handleLeftPress}
-            onPressOut={handleStop}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonText}>◀</Text>
-            <Text style={styles.buttonLabel}>Left</Text>
-          </TouchableOpacity>
-
-          <View style={styles.spacer} />
-
-          <TouchableOpacity
-            style={styles.button}
-            onPressIn={handleRightPress}
-            onPressOut={handleStop}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonText}>▶</Text>
-            <Text style={styles.buttonLabel}>Right</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Backward Button */}
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={styles.button}
-            onPressIn={handleBackwardPress}
-            onPressOut={handleStop}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.buttonText}>▼</Text>
-            <Text style={styles.buttonLabel}>Backward</Text>
-          </TouchableOpacity>
-        </View>
+        <DPad
+          onUp={handleForwardPress}
+          onDown={handleBackwardPress}
+          onLeft={handleLeftPress}
+          onRight={handleRightPress}
+          onStop={handleStop}
+          onCenter={handleStop}
+        />
       </View>
       <View style={styles.footer}>
         <Text style={[styles.footerText, { color: textColor }]}>
@@ -190,6 +149,7 @@ const styles = StyleSheet.create({
   connectedDeviceText: {
     fontSize: 14,
     marginTop: 8,
+    color: '#34C759',
     fontWeight: '600',
   },
   connectionButton: {
@@ -312,17 +272,184 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
-  row: {
+  dpadWrapper: {
+    width: 280,
+    height: 280,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  topPetal: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    marginLeft: -50,
+    width: 100,
+    height: 100,
+    backgroundColor: '#E8E8E8',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  rightPetal: {
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    marginTop: -50,
+    width: 100,
+    height: 100,
+    backgroundColor: '#E8E8E8',
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 50,
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  bottomPetal: {
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    marginLeft: -50,
+    width: 100,
+    height: 100,
+    backgroundColor: '#E8E8E8',
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  leftPetal: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    marginTop: -50,
+    width: 100,
+    height: 100,
+    backgroundColor: '#E8E8E8',
+    borderTopLeftRadius: 50,
+    borderBottomLeftRadius: 50,
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  centerStopWrapper: {
+    position: 'absolute',
+    width: 90,
+    height: 90,
+    top: '50%',
+    left: '50%',
+    marginTop: -45,
+    marginLeft: -45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  centerStop: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#D1D1D6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  sectionText: {
+    fontSize: 36,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  centerStopText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  dpadContainer: {
+    width: 280,
+    height: 280,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topButton: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  middleRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 5,
+    gap: 10,
+  },
+  bottomButton: {
+    alignItems: 'center',
+    marginTop: 10,
   },
   button: {
     backgroundColor: '#007AFF',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  stopButton: {
+    backgroundColor: '#FF3B30',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -335,7 +462,12 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonText: {
-    fontSize: 40,
+    fontSize: 32,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  stopButtonText: {
+    fontSize: 14,
     color: '#fff',
     fontWeight: 'bold',
   },
