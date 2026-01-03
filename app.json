@@ -1,5 +1,6 @@
 {
   "name": "bluetothcar",
+  "slug": "bluetothcar",
   "displayName": "Bluetoth Car",
   "icon": "./assets/1024.png",
   "splash": {
