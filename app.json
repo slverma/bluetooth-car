@@ -1,4 +1,8 @@
 {
   "name": "bluetothcar",
-  "displayName": "bluetothcar"
+  "displayName": "Bluetoth Car",
+  "icon": "./assets/1024.png",
+  "splash": {
+    "image": "./assets/1024.png"
+  }
 }

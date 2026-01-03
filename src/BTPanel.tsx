@@ -20,6 +20,7 @@ export default function BTPanel() {
   const { connectedDevice, spinAnim, sendData } = useBluetooth();
 
   const [showModal, setShowModal] = useState(false);
+  const [isLightOn, setIsLightOn] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -59,6 +60,28 @@ export default function BTPanel() {
     console.log('Right');
     if (connectedDevice) {
       await sendData('R');
+    }
+  };
+
+  const hornOn = async () => {
+    console.log('Horn on');
+    if (connectedDevice) {
+      await sendData('O');
+    }
+  };
+  const hornOff = async () => {
+    console.log('Horn off');
+    if (connectedDevice) {
+      await sendData('o');
+    }
+  };
+
+  const handleLightToggle = async () => {
+    const newLightState = !isLightOn;
+    console.log(`Toggling light: ${newLightState ? 'ON' : 'OFF'}`);
+    if (connectedDevice) {
+      await sendData(newLightState ? 'T' : 't');
+      setIsLightOn(newLightState);
     }
   };
 
@@ -107,6 +130,26 @@ export default function BTPanel() {
       <BTDevices showModal={showModal} setShowModal={setShowModal} />
 
       <View style={styles.controlsContainer}>
+        <View style={styles.extraControlsContainer}>
+          <TouchableOpacity
+            style={[styles.extraButton, styles.hornButton]}
+            onPressIn={hornOn}
+            onPressOut={hornOff}
+            disabled={!connectedDevice}
+          >
+            <Text style={styles.extraButtonText}>📯</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.extraButton,
+              isLightOn ? styles.lightButtonOn : styles.lightButton,
+            ]}
+            onPress={handleLightToggle}
+            disabled={!connectedDevice}
+          >
+            <Text style={styles.extraButtonText}>💡</Text>
+          </TouchableOpacity>
+        </View>
         <DPad
           onUp={handleForwardPress}
           onDown={handleBackwardPress}
@@ -116,7 +159,7 @@ export default function BTPanel() {
           onCenter={handleStop}
         />
       </View>
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: safeAreaInsets.bottom }]}>
         <Text style={[styles.footerText, { color: textColor }]}>
           {connectedDevice
             ? 'Connected - Ready to control'
@@ -271,6 +314,46 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
+  },
+  extraControlsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 80,
+    marginTop: 30,
+  },
+  extraButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  hornButton: {
+    backgroundColor: '#FF9500',
+  },
+  lightButton: {
+    backgroundColor: '#FFD60A',
+  },
+  lightButtonOn: {
+    backgroundColor: '#34C759',
+  },
+  extraButtonText: {
+    fontSize: 40,
+  },
+  extraButtonLabel: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '600',
+    marginTop: 4,
   },
   dpadWrapper: {
     width: 280,
@@ -486,7 +569,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    opacity: 0.6,
+    opacity: 0.7,
   },
   device: {
     padding: 8,

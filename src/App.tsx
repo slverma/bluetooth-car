@@ -15,7 +15,10 @@ function App() {
   return (
     <SafeAreaProvider>
       <BluetoothProvider>
-        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={isDarkMode ? '#000' : '#fff'}
+        />
         <BTPanel />
       </BluetoothProvider>
     </SafeAreaProvider>
