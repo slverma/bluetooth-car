@@ -41,7 +41,7 @@ Before you begin, ensure you have completed the [React Native - Set Up Your Envi
 1. Clone the repository:
    \`\`\`sh
    git clone <repository-url>
-   cd bluetothcar
+   cd bluetoothcar
    \`\`\`
 
 2. Install dependencies:
