@@ -1,7 +1,7 @@
 {
-  "name": "bluetothcar",
-  "slug": "bluetothcar",
-  "displayName": "Bluetoth Car",
+  "name": "bluetoothcar",
+  "slug": "bluetoothcar",
+  "displayName": "Bluetooth Car",
   "icon": "./assets/1024.png",
   "splash": {
     "image": "./assets/1024.png"

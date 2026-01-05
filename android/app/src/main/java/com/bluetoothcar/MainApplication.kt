@@ -1,4 +1,4 @@
-package com.bluetothcar
+package com.bluetoothcar.controller
 
 import android.app.Application
 import com.facebook.react.PackageList
