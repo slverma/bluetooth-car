@@ -11,15 +11,20 @@ import { bleManager } from './ble/bleManager';
 import BTDevices from './BTDevices';
 import BluetoothIcon from './icons/BluetoothIcon';
 import RefreshIcon from './icons/RefreshIcon';
+import SettingsIcon from './icons/SettingsIcon';
 import { useBluetooth } from './contexts/BluetoothContext';
+import { useSettings } from './contexts/SettingsContext';
 import DPad from './components/DPad';
+import SettingsModal from './components/SettingsModal';
 
 export default function BTPanel() {
   const safeAreaInsets = useSafeAreaInsets();
   const isDarkMode = useColorScheme() === 'dark';
   const { connectedDevice, spinAnim, sendData } = useBluetooth();
+  const { commands } = useSettings();
 
   const [showModal, setShowModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isLightOn, setIsLightOn] = useState(false);
 
   useEffect(() => {
@@ -31,48 +36,48 @@ export default function BTPanel() {
   const handleStop = async () => {
     console.log('Stop');
     if (connectedDevice) {
-      await sendData('S');
+      await sendData(commands.stop);
     }
   };
 
   const handleForwardPress = async () => {
     console.log('Forward');
     if (connectedDevice) {
-      await sendData('F');
+      await sendData(commands.forward);
     }
   };
 
   const handleBackwardPress = async () => {
     console.log('Backward');
     if (connectedDevice) {
-      await sendData('B');
+      await sendData(commands.backward);
     }
   };
 
   const handleLeftPress = async () => {
     console.log('Left');
     if (connectedDevice) {
-      await sendData('L');
+      await sendData(commands.left);
     }
   };
 
   const handleRightPress = async () => {
     console.log('Right');
     if (connectedDevice) {
-      await sendData('R');
+      await sendData(commands.right);
     }
   };
 
   const hornOn = async () => {
     console.log('Horn on');
     if (connectedDevice) {
-      await sendData('O');
+      await sendData(commands.hornOn);
     }
   };
   const hornOff = async () => {
     console.log('Horn off');
     if (connectedDevice) {
-      await sendData('o');
+      await sendData(commands.hornOff);
     }
   };
 
@@ -80,7 +85,7 @@ export default function BTPanel() {
     const newLightState = !isLightOn;
     console.log(`Toggling light: ${newLightState ? 'ON' : 'OFF'}`);
     if (connectedDevice) {
-      await sendData(newLightState ? 'T' : 't');
+      await sendData(newLightState ? commands.lightOn : commands.lightOff);
       setIsLightOn(newLightState);
     }
   };
@@ -96,6 +101,12 @@ export default function BTPanel() {
       ]}
     >
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => setShowSettingsModal(true)}
+        >
+          <SettingsIcon color={textColor} size={28} />
+        </TouchableOpacity>
         <View style={styles.titleContainer}>
           <Text style={[styles.title, { color: textColor }]}>🚙</Text>
           <Text style={[styles.title, { color: textColor }]}>
@@ -128,6 +139,10 @@ export default function BTPanel() {
       </View>
 
       <BTDevices showModal={showModal} setShowModal={setShowModal} />
+      <SettingsModal
+        visible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+      />
 
       <View style={styles.controlsContainer}>
         <View style={styles.extraControlsContainer}>
@@ -176,9 +191,20 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+    paddingLeft: 70,
     paddingRight: 90,
     alignItems: 'center',
     position: 'relative',
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   titleContainer: {
     alignItems: 'center',
