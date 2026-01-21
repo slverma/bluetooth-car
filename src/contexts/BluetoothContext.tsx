@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   ReactNode,
+  useEffect,
 } from 'react';
 import { Device } from 'react-native-ble-plx';
 import { BluetoothDevice } from 'react-native-bluetooth-classic';
@@ -48,6 +49,19 @@ export const BluetoothProvider = ({ children }: { children: ReactNode }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [spinAnim] = useState(new Animated.Value(0));
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      console.log('BluetoothProvider unmounting, cleaning up...');
+      try {
+        bleManager.stopDeviceScan();
+        classicBTManager.cancelDiscovery();
+      } catch (error) {
+        console.log('Cleanup error:', error);
+      }
+    };
+  }, []);
 
   const stopScan = useCallback(() => {
     console.log('Stopping scan...');
@@ -96,8 +110,8 @@ export const BluetoothProvider = ({ children }: { children: ReactNode }) => {
             : [...prev, unifiedDevice],
         );
       });
-    } catch (error) {
-      console.log('Error getting bonded devices:', error);
+    } catch (error: any) {
+      console.log('Error getting bonded devices:', error?.message || error);
     }
 
     // Get BLE connected devices
@@ -124,19 +138,22 @@ export const BluetoothProvider = ({ children }: { children: ReactNode }) => {
             : [...prev, unifiedDevice],
         );
       });
-    } catch (error) {
-      console.log('Error getting connected devices:', error);
+    } catch (error: any) {
+      console.log('Error getting connected devices:', error?.message || error);
     }
 
     // Start BLE scan for nearby devices
     console.log('Starting BLE scan...');
     bleManager.startDeviceScan(null, null, (error, device) => {
       if (error) {
-        console.log('Scan error:', error);
+        console.log('Scan error:', error?.message || error);
+        // Stop scanning on error
+        setIsScanning(false);
+        spinAnim.setValue(0);
         return;
       }
 
-      if (device) {
+      if (device && (device.name || device.localName)) {
         const unifiedDevice: UnifiedDevice = {
           id: device.id,
           name: device.name || device.localName,
@@ -188,29 +205,90 @@ export const BluetoothProvider = ({ children }: { children: ReactNode }) => {
             connected.name,
           );
         } else if (device._bleDevice) {
-          // Connect to BLE device
-          const connected = await bleManager.connectToDevice(device.id);
-          await connected.discoverAllServicesAndCharacteristics();
-          setConnectedDevice({
-            id: connected.id,
-            name: connected.name || connected.localName,
-            deviceType: 'BLE',
-            _bleDevice: connected,
-          });
-          console.log('Successfully connected to BLE device:', connected.name);
+          // Connect to BLE device with proper error handling
+          try {
+            // First check if device is already connected
+            const isConnected = await device._bleDevice.isConnected();
+            if (isConnected) {
+              console.log(
+                'Device already connected, using existing connection',
+              );
+              setConnectedDevice({
+                id: device.id,
+                name: device.name,
+                deviceType: 'BLE',
+                _bleDevice: device._bleDevice,
+              });
+              return;
+            }
 
-          // Setup disconnect listener for BLE
-          connected.onDisconnected((error, disconnectedDevice) => {
-            console.log(
-              'BLE device disconnected:',
-              disconnectedDevice?.name,
-              error,
-            );
-            setConnectedDevice(null);
-          });
+            const connected = await bleManager
+              .connectToDevice(device.id, {
+                timeout: 10000,
+                autoConnect: false,
+              })
+              .catch((err: any) => {
+                // Catch connection errors immediately to prevent null propagation
+                const errorMsg =
+                  err?.message || err?.reason || 'Connection failed';
+                console.error('Direct connection error:', errorMsg);
+                throw new Error(errorMsg);
+              });
+
+            // Ensure device is connected before discovering services
+            if (connected) {
+              await connected
+                .discoverAllServicesAndCharacteristics()
+                .catch((err: any) => {
+                  const errorMsg = err?.message || 'Service discovery failed';
+                  console.error('Service discovery error:', errorMsg);
+                  throw new Error(errorMsg);
+                });
+
+              setConnectedDevice({
+                id: connected.id,
+                name: connected.name || connected.localName,
+                deviceType: 'BLE',
+                _bleDevice: connected,
+              });
+              console.log(
+                'Successfully connected to BLE device:',
+                connected.name,
+              );
+
+              // Setup disconnect listener for BLE
+              connected.onDisconnected((error, disconnectedDevice) => {
+                console.log(
+                  'BLE device disconnected:',
+                  disconnectedDevice?.name || 'Unknown',
+                  error?.message || 'No error message',
+                );
+                setConnectedDevice(null);
+              });
+            }
+          } catch (bleError: any) {
+            const errorMessage =
+              bleError?.message ||
+              bleError?.reason ||
+              String(bleError) ||
+              'Failed to connect to BLE device';
+            console.error('BLE connection error:', errorMessage);
+
+            // Clean up any partial connection
+            try {
+              await bleManager.cancelDeviceConnection(device.id).catch(() => {
+                // Silently ignore cleanup errors
+              });
+            } catch (cleanupError) {
+              console.info('Cleanup error (can be ignored):', cleanupError);
+              // Silently ignore cleanup errors
+            }
+            throw new Error(errorMessage);
+          }
         }
-      } catch (error) {
-        console.error('Connection error:', error);
+      } catch (error: any) {
+        console.error('Connection error:', error?.message || error);
+        setConnectedDevice(null);
         throw error;
       } finally {
         setIsConnecting(false);
@@ -226,15 +304,36 @@ export const BluetoothProvider = ({ children }: { children: ReactNode }) => {
 
         if (connectedDevice.deviceType === 'CLASSIC') {
           await classicBTManager.disconnect(connectedDevice.id);
-        } else {
-          await bleManager.cancelDeviceConnection(connectedDevice.id);
+        } else if (connectedDevice._bleDevice) {
+          // Check if device is still connected before disconnecting
+          try {
+            const isConnected = await connectedDevice._bleDevice
+              .isConnected()
+              .catch(() => false);
+            if (isConnected) {
+              await bleManager
+                .cancelDeviceConnection(connectedDevice.id)
+                .catch((err: any) => {
+                  const errorMsg = err?.message || 'Disconnect failed';
+                  console.log('Disconnect error:', errorMsg);
+                });
+            } else {
+              console.log('Device already disconnected');
+            }
+          } catch (disconnectError: any) {
+            console.log(
+              'Disconnect error (can be ignored):',
+              disconnectError?.message || String(disconnectError),
+            );
+          }
         }
 
         setConnectedDevice(null);
         console.log('Disconnected successfully');
-      } catch (error) {
-        console.error('Disconnect error:', error);
-        throw error;
+      } catch (error: any) {
+        console.error('Disconnect error:', error?.message || String(error));
+        // Still clear the connected device even if disconnect fails
+        setConnectedDevice(null);
       }
     }
   }, [connectedDevice]);
@@ -269,8 +368,8 @@ export const BluetoothProvider = ({ children }: { children: ReactNode }) => {
         }
 
         return false;
-      } catch (error) {
-        console.error('Error sending data:', error);
+      } catch (error: any) {
+        console.error('Error sending data:', error?.message || error);
         return false;
       }
     },

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,7 +7,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { bleManager } from './ble/bleManager';
 import BTDevices from './BTDevices';
 import BluetoothIcon from './icons/BluetoothIcon';
 import RefreshIcon from './icons/RefreshIcon';
@@ -26,12 +25,6 @@ export default function BTPanel() {
   const [showModal, setShowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isLightOn, setIsLightOn] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      bleManager.destroy();
-    };
-  }, []);
 
   const handleStop = async () => {
     console.log('Stop');
