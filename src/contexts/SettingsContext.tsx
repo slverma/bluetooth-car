@@ -8,6 +8,8 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export type ThemeType = 'vertical' | 'horizontal';
+
 export interface CommandSettings {
   forward: string;
   backward: string;
@@ -18,6 +20,11 @@ export interface CommandSettings {
   hornOff: string;
   lightOn: string;
   lightOff: string;
+}
+
+export interface Settings {
+  commands: CommandSettings;
+  theme: ThemeType;
 }
 
 const DEFAULT_COMMANDS: CommandSettings = {
@@ -32,11 +39,13 @@ const DEFAULT_COMMANDS: CommandSettings = {
   lightOff: 't',
 };
 
-const STORAGE_KEY = '@bluetooth_car_commands';
+const STORAGE_KEY = '@bluetooth_car_settings';
 
 interface SettingsContextType {
   commands: CommandSettings;
+  theme: ThemeType;
   updateCommand: (key: keyof CommandSettings, value: string) => Promise<void>;
+  updateTheme: (theme: ThemeType) => Promise<void>;
   resetToDefaults: () => Promise<void>;
   isLoading: boolean;
 }
@@ -47,39 +56,49 @@ const SettingsContext = createContext<SettingsContextType | undefined>(
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [commands, setCommands] = useState<CommandSettings>(DEFAULT_COMMANDS);
+  const [theme, setTheme] = useState<ThemeType>('vertical');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load commands from storage on mount
+  // Load settings from storage on mount
   useEffect(() => {
-    loadCommands();
+    loadSettings();
   }, []);
 
-  const loadCommands = async () => {
+  const loadSettings = async () => {
     try {
-      console.log('Loading commands from AsyncStorage...');
+      console.log('Loading settings from AsyncStorage...');
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       console.log('Stored value:', stored);
       if (stored) {
-        const parsedCommands = JSON.parse(stored);
-        console.log('Parsed commands:', parsedCommands);
-        setCommands({ ...DEFAULT_COMMANDS, ...parsedCommands });
+        const parsedSettings = JSON.parse(stored);
+        console.log('Parsed settings:', parsedSettings);
+        if (parsedSettings.commands) {
+          setCommands({ ...DEFAULT_COMMANDS, ...parsedSettings.commands });
+        }
+        if (parsedSettings.theme) {
+          setTheme(parsedSettings.theme);
+        }
       } else {
-        console.log('No stored commands found, using defaults');
+        console.log('No stored settings found, using defaults');
       }
     } catch (error) {
-      console.error('Error loading commands:', error);
+      console.error('Error loading settings:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const saveCommands = async (newCommands: CommandSettings) => {
+  const saveSettings = async (
+    newCommands: CommandSettings,
+    newTheme: ThemeType,
+  ) => {
     try {
-      console.log('Saving commands to AsyncStorage:', newCommands);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newCommands));
-      console.log('Commands saved successfully');
+      const settings: Settings = { commands: newCommands, theme: newTheme };
+      console.log('Saving settings to AsyncStorage:', settings);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      console.log('Settings saved successfully');
     } catch (error) {
-      console.error('Error saving commands:', error);
+      console.error('Error saving settings:', error);
     }
   };
 
@@ -87,19 +106,30 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     async (key: keyof CommandSettings, value: string) => {
       const newCommands = { ...commands, [key]: value };
       setCommands(newCommands);
-      await saveCommands(newCommands);
+      await saveSettings(newCommands, theme);
     },
-    [commands],
+    [commands, theme],
+  );
+
+  const updateTheme = useCallback(
+    async (newTheme: ThemeType) => {
+      setTheme(newTheme);
+      await saveSettings(commands, newTheme);
+    },
+    [commands, setTheme],
   );
 
   const resetToDefaults = useCallback(async () => {
     setCommands(DEFAULT_COMMANDS);
-    await saveCommands(DEFAULT_COMMANDS);
+    setTheme('vertical');
+    await saveSettings(DEFAULT_COMMANDS, 'vertical');
   }, []);
 
   const value: SettingsContextType = {
     commands,
+    theme,
     updateCommand,
+    updateTheme,
     resetToDefaults,
     isLoading,
   };

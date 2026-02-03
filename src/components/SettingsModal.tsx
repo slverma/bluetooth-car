@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, JSX } from 'react';
 import {
   Modal,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   useColorScheme,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings, ThemeType } from '../contexts/SettingsContext';
 
 interface SettingsModalProps {
   visible: boolean;
@@ -32,22 +32,35 @@ const commandLabels = {
 export default function SettingsModal({
   visible,
   onClose,
-}: SettingsModalProps) {
+}: SettingsModalProps): JSX.Element {
   const safeAreaInsets = useSafeAreaInsets();
   const isDarkMode = useColorScheme() === 'dark';
-  const { commands, updateCommand, resetToDefaults } = useSettings();
+  const { commands, theme, updateCommand, updateTheme, resetToDefaults } =
+    useSettings();
 
   const [editedCommands, setEditedCommands] = useState(commands);
+  const [editedTheme, setEditedTheme] = useState<ThemeType>(theme);
 
   // Sync editedCommands when modal becomes visible or commands change
   useEffect(() => {
     if (visible) {
       console.log('Settings modal opened, current commands:', commands);
       setEditedCommands(commands);
+      setEditedTheme(theme);
     }
-  }, [visible, commands]);
+  }, [visible, commands, theme]);
 
   const handleSave = async () => {
+    console.log('Saving settings...');
+    console.log('Current theme:', theme);
+    console.log('Edited theme:', editedTheme);
+
+    // Save theme if changed (do this first)
+    if (editedTheme !== theme) {
+      console.log('Updating theme to:', editedTheme);
+      await updateTheme(editedTheme);
+    }
+
     // Save all commands
     const keys = Object.keys(editedCommands) as Array<keyof typeof commands>;
     for (const key of keys) {
@@ -55,6 +68,8 @@ export default function SettingsModal({
         await updateCommand(key, editedCommands[key]);
       }
     }
+
+    console.log('Settings saved, closing modal');
     onClose();
   };
 
@@ -71,6 +86,7 @@ export default function SettingsModal({
       lightOn: 'T',
       lightOff: 't',
     });
+    setEditedTheme('vertical');
   };
 
   const backgroundColor = isDarkMode ? '#1C1C1E' : '#fff';
@@ -91,72 +107,146 @@ export default function SettingsModal({
             styles.modalContent,
             {
               backgroundColor,
-              paddingBottom: safeAreaInsets.bottom + 20,
+              paddingBottom: safeAreaInsets.bottom,
             },
           ]}
         >
-          <View style={styles.modalHeader}>
-            <Text style={[styles.modalTitle, { color: textColor }]}>
-              ⚙️ Command Settings
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={[styles.closeButton, { color: textColor }]}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={[styles.description, { color: textColor }]}>
-            Configure the commands sent to your Bluetooth device
-          </Text>
-
           <ScrollView
-            style={styles.commandsList}
-            showsVerticalScrollIndicator={false}
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={true}
+            bounces={true}
           >
-            {(
-              Object.keys(commandLabels) as Array<keyof typeof commandLabels>
-            ).map(key => (
-              <View key={key} style={styles.commandItem}>
-                <Text style={[styles.commandLabel, { color: textColor }]}>
-                  {commandLabels[key]}
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>
+                ⚙️ Command Settings
+              </Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={[styles.closeButton, { color: textColor }]}>
+                  ✕
                 </Text>
-                <TextInput
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.description, { color: textColor }]}>
+              Configure the commands sent to your Bluetooth device
+            </Text>
+
+            {/* Theme Selection */}
+            <View style={styles.themeSection}>
+              <Text style={[styles.sectionTitle, { color: textColor }]}>
+                🎨 Theme
+              </Text>
+              <View style={styles.themeButtons}>
+                <TouchableOpacity
                   style={[
-                    styles.commandInput,
-                    {
-                      backgroundColor: inputBackgroundColor,
-                      color: textColor,
-                      borderColor: borderColor,
-                    },
+                    styles.themeButton,
+                    { borderColor: borderColor },
+                    editedTheme === 'vertical' && styles.themeButtonActive,
                   ]}
-                  value={editedCommands[key]}
-                  onChangeText={text =>
-                    setEditedCommands({ ...editedCommands, [key]: text })
-                  }
-                  placeholder={`Enter ${key} command`}
-                  placeholderTextColor={isDarkMode ? '#8E8E93' : '#C7C7CC'}
-                  maxLength={20}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                  onPress={() => setEditedTheme('vertical')}
+                >
+                  <Text
+                    style={[
+                      styles.themeButtonText,
+                      { color: textColor },
+                      editedTheme === 'vertical' &&
+                        styles.themeButtonTextActive,
+                    ]}
+                  >
+                    📱 Vertical
+                  </Text>
+                  <Text
+                    style={[
+                      styles.themeButtonDescription,
+                      { color: textColor },
+                    ]}
+                  >
+                    D-Pad controls
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.themeButton,
+                    { borderColor: borderColor },
+                    editedTheme === 'horizontal' && styles.themeButtonActive,
+                  ]}
+                  onPress={() => setEditedTheme('horizontal')}
+                >
+                  <Text
+                    style={[
+                      styles.themeButtonText,
+                      { color: textColor },
+                      editedTheme === 'horizontal' &&
+                        styles.themeButtonTextActive,
+                    ]}
+                  >
+                    📲 Horizontal
+                  </Text>
+                  <Text
+                    style={[
+                      styles.themeButtonDescription,
+                      { color: textColor },
+                    ]}
+                  >
+                    Car-style controls
+                  </Text>
+                </TouchableOpacity>
               </View>
-            ))}
+            </View>
+
+            <Text style={[styles.sectionTitle, { color: textColor }]}>
+              📝 Commands
+            </Text>
+
+            <View style={styles.commandsList}>
+              {(
+                Object.keys(commandLabels) as Array<keyof typeof commandLabels>
+              ).map(key => (
+                <View key={key} style={styles.commandItem}>
+                  <Text style={[styles.commandLabel, { color: textColor }]}>
+                    {commandLabels[key]}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.commandInput,
+                      {
+                        backgroundColor: inputBackgroundColor,
+                        color: textColor,
+                        borderColor: borderColor,
+                      },
+                    ]}
+                    value={editedCommands[key]}
+                    onChangeText={text =>
+                      setEditedCommands({ ...editedCommands, [key]: text })
+                    }
+                    placeholder={`Enter ${key} command`}
+                    placeholderTextColor={isDarkMode ? '#8E8E93' : '#C7C7CC'}
+                    maxLength={20}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.resetButton]}
+                onPress={handleReset}
+              >
+                <Text style={styles.resetButtonText}>Reset to Defaults</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton]}
+                onPress={handleSave}
+              >
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.resetButton]}
-              onPress={handleReset}
-            >
-              <Text style={styles.resetButtonText}>Reset to Defaults</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton]}
-              onPress={handleSave}
-            >
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </Modal>
@@ -167,15 +257,22 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingHorizontal: 20,
-    height: '85%',
-    flexDirection: 'column',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '100%',
+    overflow: 'hidden',
+  },
+  scrollContainer: {
+    maxHeight: '100%',
+  },
+  scrollContent: {
+    padding: 20,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -198,9 +295,43 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
+  themeSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  themeButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  themeButton: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+  },
+  themeButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  themeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  themeButtonTextActive: {
+    color: '#fff',
+  },
+  themeButtonDescription: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
   commandsList: {
-    flexGrow: 1,
-    flexShrink: 1,
     marginBottom: 20,
   },
   commandItem: {
@@ -226,6 +357,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 12,
+    marginTop: 8,
   },
   button: {
     paddingVertical: 14,
