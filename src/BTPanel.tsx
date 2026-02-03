@@ -15,16 +15,24 @@ import { useBluetooth } from './contexts/BluetoothContext';
 import { useSettings } from './contexts/SettingsContext';
 import DPad from './components/DPad';
 import SettingsModal from './components/SettingsModal';
+import HorizontalTheme from './components/HorizontalTheme';
 
 export default function BTPanel() {
   const safeAreaInsets = useSafeAreaInsets();
   const isDarkMode = useColorScheme() === 'dark';
   const { connectedDevice, spinAnim, sendData } = useBluetooth();
-  const { commands } = useSettings();
+  const { commands, theme } = useSettings();
 
   const [showModal, setShowModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isLightOn, setIsLightOn] = useState(false);
+
+  console.log('BTPanel rendering with theme:', theme);
+  console.log('Theme type:', typeof theme);
+  console.log('Is horizontal?', theme === 'horizontal');
+  console.log('Is vertical?', theme === 'vertical');
+
+  console.log('Rendering VERTICAL layout');
 
   const handleStop = async () => {
     console.log('Stop');
@@ -86,6 +94,69 @@ export default function BTPanel() {
   const backgroundColor = isDarkMode ? '#000' : '#fff';
   const textColor = isDarkMode ? '#fff' : '#000';
 
+  // If horizontal theme is selected, render the horizontal layout
+  if (theme === 'horizontal') {
+    console.log('Rendering HORIZONTAL layout');
+    return (
+      <View style={styles.horizontalContainer}>
+        <BTDevices showModal={showModal} setShowModal={setShowModal} />
+        <SettingsModal
+          visible={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+        />
+        <View style={styles.horizontalHeader}>
+          <TouchableOpacity
+            style={styles.settingsButtonHorizontal}
+            onPress={() => setShowSettingsModal(true)}
+          >
+            <SettingsIcon color={isDarkMode ? '#fff' : '#000'} size={24} />
+          </TouchableOpacity>
+
+          <View style={styles.titleContainerHorizontal}>
+            {connectedDevice ? (
+              <Text
+                style={[
+                  styles.connectedDeviceTextHorizontal,
+                  { color: isDarkMode ? '#fff' : '#000' },
+                ]}
+              >
+                🚙 Connected: {connectedDevice.name}
+              </Text>
+            ) : (
+              <Text
+                style={[
+                  styles.connectedDeviceTextHorizontal,
+                  { color: isDarkMode ? '#fff' : '#000' },
+                ]}
+              >
+                🚙 Not Connected
+              </Text>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.connectionButtonHorizontal,
+              connectedDevice && styles.connectionButtonConnected,
+            ]}
+            onPress={() => setShowModal(true)}
+          >
+            <View style={styles.iconContainer}>
+              <View style={styles.refreshIconBorder}>
+                <RefreshIcon color="#fff" spinAnim={spinAnim} />
+              </View>
+              <View style={styles.bluetoothIconCenter}>
+                <BluetoothIcon color="#fff" size={20} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+        <HorizontalTheme />
+      </View>
+    );
+  }
+
+  console.log('Rendering Vertical layout');
   return (
     <View
       style={[
@@ -594,5 +665,39 @@ const styles = StyleSheet.create({
     padding: 8,
     borderBottomWidth: 1,
     borderColor: '#ddd',
+  },
+  horizontalContainer: {
+    flex: 1,
+  },
+  horizontalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    height: 60,
+  },
+  settingsButtonHorizontal: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleContainerHorizontal: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  connectedDeviceTextHorizontal: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  connectionButtonHorizontal: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
