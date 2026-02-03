@@ -17,6 +17,41 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
+interface ThemeOption {
+  value: ThemeType;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+const THEME_OPTIONS: ThemeOption[] = [
+  {
+    value: 'vertical',
+    label: 'Vertical',
+    icon: '📱',
+    description: 'Classic D-Pad controls',
+  },
+  {
+    value: 'horizontal',
+    label: 'Horizontal',
+    icon: '🏎️',
+    description: 'Car-style controls',
+  },
+  // Add more themes here in the future:
+  // {
+  //   value: 'gamepad',
+  //   label: 'Gamepad',
+  //   icon: '🎮',
+  //   description: 'Console-style layout',
+  // },
+  // {
+  //   value: 'joystick',
+  //   label: 'Joystick',
+  //   icon: '🕹️',
+  //   description: 'Virtual joystick',
+  // },
+];
+
 const commandLabels = {
   forward: '⬆️ Forward',
   backward: '⬇️ Backward',
@@ -137,63 +172,57 @@ export default function SettingsModal({
               <Text style={[styles.sectionTitle, { color: textColor }]}>
                 🎨 Theme
               </Text>
-              <View style={styles.themeButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.themeButton,
-                    { borderColor: borderColor },
-                    editedTheme === 'vertical' && styles.themeButtonActive,
-                  ]}
-                  onPress={() => setEditedTheme('vertical')}
-                >
-                  <Text
+              <Text style={[styles.themeSectionSubtitle, { color: textColor }]}>
+                Choose your preferred control layout
+              </Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.themeScrollContent}
+              >
+                {THEME_OPTIONS.map(themeOption => (
+                  <TouchableOpacity
+                    key={themeOption.value}
                     style={[
-                      styles.themeButtonText,
-                      { color: textColor },
-                      editedTheme === 'vertical' &&
-                        styles.themeButtonTextActive,
+                      styles.themeCard,
+                      {
+                        backgroundColor: inputBackgroundColor,
+                        borderColor: borderColor,
+                      },
+                      editedTheme === themeOption.value &&
+                        styles.themeCardActive,
                     ]}
+                    onPress={() => setEditedTheme(themeOption.value)}
                   >
-                    📱 Vertical
-                  </Text>
-                  <Text
-                    style={[
-                      styles.themeButtonDescription,
-                      { color: textColor },
-                    ]}
-                  >
-                    D-Pad controls
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.themeButton,
-                    { borderColor: borderColor },
-                    editedTheme === 'horizontal' && styles.themeButtonActive,
-                  ]}
-                  onPress={() => setEditedTheme('horizontal')}
-                >
-                  <Text
-                    style={[
-                      styles.themeButtonText,
-                      { color: textColor },
-                      editedTheme === 'horizontal' &&
-                        styles.themeButtonTextActive,
-                    ]}
-                  >
-                    📲 Horizontal
-                  </Text>
-                  <Text
-                    style={[
-                      styles.themeButtonDescription,
-                      { color: textColor },
-                    ]}
-                  >
-                    Car-style controls
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    {editedTheme === themeOption.value && (
+                      <View style={styles.themeCheckmark}>
+                        <Text style={styles.themeCheckmarkText}>✓</Text>
+                      </View>
+                    )}
+                    <View style={styles.themeIconContainer}>
+                      <Text style={styles.themeIcon}>{themeOption.icon}</Text>
+                    </View>
+                    <Text
+                      style={[
+                        styles.themeCardTitle,
+                        { color: textColor },
+                        editedTheme === themeOption.value &&
+                          styles.themeCardTitleActive,
+                      ]}
+                    >
+                      {themeOption.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.themeCardDescription,
+                        { color: textColor },
+                      ]}
+                    >
+                      {themeOption.description}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
             <Text style={[styles.sectionTitle, { color: textColor }]}>
@@ -303,33 +332,65 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
   },
-  themeButtons: {
-    flexDirection: 'row',
+  themeSectionSubtitle: {
+    fontSize: 13,
+    opacity: 0.6,
+    marginBottom: 12,
+    marginTop: -8,
+  },
+  themeScrollContent: {
+    paddingVertical: 4,
     gap: 12,
   },
-  themeButton: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+  themeCard: {
+    width: 140,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    borderRadius: 16,
     borderWidth: 2,
     alignItems: 'center',
+    position: 'relative',
   },
-  themeButtonActive: {
+  themeCardActive: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
-  themeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+  themeCheckmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  themeButtonTextActive: {
+  themeCheckmarkText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  themeIconContainer: {
+    marginBottom: 8,
+  },
+  themeIcon: {
+    fontSize: 40,
+  },
+  themeCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  themeCardTitleActive: {
     color: '#fff',
   },
-  themeButtonDescription: {
+  themeCardDescription: {
     fontSize: 12,
     opacity: 0.7,
+    textAlign: 'center',
+    lineHeight: 16,
   },
   commandsList: {
     marginBottom: 20,
